@@ -136,8 +136,6 @@ async fn does_backup_exist(id: String, connection: Db) -> Result<NoContent, NotF
     }
 
     return Err(NotFound(format!("seed_not_found")));
-
-    // Ok((1 == 1).then(|| ()))
 }
 
 #[post("/", data = "<seed_backup>")]
