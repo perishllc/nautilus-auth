@@ -6,10 +6,21 @@ use crate::diesel::RunQueryDsl;
 use diesel::expression_methods::ExpressionMethods;
 use diesel::query_dsl::QueryDsl;
 use diesel::{table, Insertable, Queryable};
-use rocket::response::status::NotFound;
+use rocket::{
+    response::status::{NoContent, NotFound},
+};
+use crate::diesel::TextExpressionMethods;
 use rocket::{fairing::AdHoc, serde::json::Json, State};
 use rocket_sync_db_pools::database;
 use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(crate = "rocket::serde")]
+pub struct ApiError {
+    pub details: String,
+}
+
+// type Result<T, E = Debug<diesel::result::Error>> = std::result::Result<T, E>;
 
 table! {
     seeds (identifier) {
@@ -101,13 +112,61 @@ async fn get_seed_backup(id: String, connection: Db) -> Result<Json<SeedBackup>,
         return Ok(res.unwrap());
     }
 
-    return Err(NotFound(format!("Could not find seed")));
+    return Err(NotFound(format!("seed_not_found")));
+}
+
+// async fn does_backup_exist(id: String, connection: Db) -> Result<bool, NotFound<String>> {
+#[get("/<id>")]
+async fn does_backup_exist(id: String, connection: Db) -> Result<NoContent, NotFound<String>> {
+    println!("partial identifier: {}", id);
+
+    // check if the identifier contains id within the identifier:
+    // SELECT * FROM seeds WHERE identifier LIKE '%id%'
+    let res = connection
+        .run(move |c| {
+            seeds::table
+                .filter(seeds::identifier.like(format!("%{}%", id)))
+                .first::<SeedBackup>(c)
+        })
+        .await
+        .map(Json);
+
+    if res.is_ok() {
+        return Ok(NoContent);
+    }
+
+    return Err(NotFound(format!("seed_not_found")));
+
+    // Ok((1 == 1).then(|| ()))
 }
 
 #[post("/", data = "<seed_backup>")]
 async fn create_seed_backup(connection: Db, seed_backup: Json<SeedBackup>) -> Result<Json<SeedBackup>, NotFound<String>> {
+
+    // check if the seed already exists:
+    // let seed_exists = connection
+    //     .run(|c| {
+    //         seeds::table
+    //             .filter(seeds::identifier.eq(seed_backup.identifier.clone()))
+    //             .first::<SeedBackup>(c)
+    //     })
+    //     .await
+    //     .map(Json);
+
+    // if seed_exists.is_ok() {
+    //     return Err(NotFound(format!("Seed already exists")));
+
+        // delete:
+        // let affected = db.run(move |conn| {
+        //     diesel::delete(seeds::table)
+        //         .filter(seeds::identifier.eq(seed_backup.identifier.clone()))
+        //         .execute(conn)
+        // }).await?;
+    // }
+
+
     let res = connection
-        .run(move |c| {
+        .run(|c| {
             diesel::insert_into(seeds::table)
                 .values(&seed_backup.into_inner())
                 .get_result(c)
@@ -124,6 +183,32 @@ async fn create_seed_backup(connection: Db, seed_backup: Json<SeedBackup>) -> Re
     return Err(NotFound(format!("Something went wrong")));
 }
 
+
+#[get("/<id>")]
+async fn delete_seed_backup(connection: Db, id: String) -> Result<NoContent, NotFound<Json<ApiError>>> {
+    
+    println!("identifier: {}", id);
+    
+    connection
+        .run(move |c| {
+            let affected = diesel::delete(seeds::table.filter(seeds::identifier.eq(id)))
+                .execute(c)
+                .expect("Connection is broken");
+            match affected {
+                1 => Ok(()),
+                0 => Err("NotFound"),
+                _ => Err("???"),
+            }
+        })
+        .await
+        .map(|_| NoContent)
+        .map_err(|e| {
+            NotFound(Json(ApiError {
+                details: e.to_string(),
+            }))
+        })
+}
+
 #[launch]
 fn rocket() -> _ {
     let rocket = rocket::build();
@@ -133,4 +218,6 @@ fn rocket() -> _ {
         .attach(AdHoc::config::<Config>())
         .mount("/", routes![index, custom])
         .mount("/seed-backup", routes![get_seed_backup, create_seed_backup])
+        .mount("/seed-exists", routes![does_backup_exist])
+        .mount("/delete-seed", routes![delete_seed_backup])
 }

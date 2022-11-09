@@ -29,9 +29,9 @@ dependencies = [
 
 [[package]]
 name = "aes"
-version = "0.8.1"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfe0133578c0986e1fe3dfcd4af1cc5b2dd6c3dbf534d69916ce16a2701d40ba"
+checksum = "433cfd6710c9986c576a25ca913c39d66a6474107b406f34f91d4a8923395241"
 dependencies = [
  "cfg-if",
  "cipher",
@@ -136,18 +136,6 @@ name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
-
-[[package]]
-name = "backend-rs"
-version = "0.1.0"
-dependencies = [
- "diesel",
- "diesel_cli",
- "dotenv 0.11.0",
- "rocket",
- "rocket_sync_db_pools",
- "serde",
-]
 
 [[package]]
 name = "backtrace"
@@ -792,9 +780,9 @@ dependencies = [
 
 [[package]]
 name = "iana-time-zone"
-version = "0.1.51"
+version = "0.1.52"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5a6ef98976b22b3b7f2f3a806f858cb862044cfa66805aa3ad84cb3d3b785ed"
+checksum = "c422fb4f6e80490d0afcacf5c3de2c22ab8e631e0cd7cb2d4a3baf844720a52a"
 dependencies = [
  "android_system_properties",
  "core-foundation-sys",
@@ -1005,6 +993,18 @@ dependencies = [
  "tokio",
  "tokio-util",
  "version_check",
+]
+
+[[package]]
+name = "nautilus-auth"
+version = "0.1.0"
+dependencies = [
+ "diesel",
+ "diesel_cli",
+ "dotenv 0.11.0",
+ "rocket",
+ "rocket_sync_db_pools",
+ "serde",
 ]
 
 [[package]]
